@@ -8,7 +8,7 @@ const port = 3000;
 app.use(bodyParser.json());
 
 const connection = mysql.createConnection({
-    host: 'srv.pusrimedika.com',
+    host: 'localhost',
     user: 'pusrimed_wgatway',
     password: 'pusrimed_wgatway',
     database: 'pusrimed_wgdev'
