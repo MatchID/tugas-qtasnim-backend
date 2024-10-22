@@ -8,7 +8,7 @@ const port = 3000;
 app.use(bodyParser.json());
 
 const connection = mysql.createConnection({
-    host: 'localhost',
+    host: 'srv.pusrimedika.com',
     user: 'pusrimed_wgatway',
     password: 'pusrimed_wgatway',
     database: 'pusrimed_wgdev'
@@ -143,29 +143,38 @@ app.post('/api/transaksi', (req, res) => {
   });
 
   app.get('/api/transaksi/compare', (req, res) => {
-    const { order, startDate, endDate } = req.query;
+    const { order = 'asc', startDate, endDate } = req.query; // Default order to 'asc'
     let query = `
         SELECT jb.jenis_barang, SUM(t.jumlah_terjual) as total_terjual
         FROM Barang b
         JOIN Transaksi t ON t.id_barang = b.id_barang
-        JOIN JenisBarang jb ON b.id_jenis = jb.id_jenis`;
-        if (startDate) {
-          query += `WHERE DATE_FORMAT(t.tanggal_transaksi, '%Y-%m-%d') BETWEEN '${startDate}' AND '${endDate}'`;
-        }
-        query += `
-        GROUP BY jb.jenis_barang
-        ORDER BY total_terjual ${order === 'desc' ? 'DESC' : 'ASC'}; 
+        JOIN JenisBarang jb ON b.id_jenis = jb.id_jenis
     `;
-    
-    connection.query(query, (err, results) => {
+
+    const queryParams = [];
+
+    // Add conditions for date filtering if provided
+    if (startDate && endDate) {
+        query += ` WHERE DATE_FORMAT(t.tanggal_transaksi, '%Y-%m-%d') BETWEEN ? AND ?`;
+        queryParams.push(startDate, endDate);
+    }
+
+    // Add grouping and ordering
+    query += `
+        GROUP BY jb.jenis_barang
+        ORDER BY total_terjual ${order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC'};
+    `;
+
+    // Execute the query
+    connection.query(query, queryParams, (err, results) => {
         if (err) {
             console.error('Error fetching data:', err);
-            res.status(500).json({ error: 'Error fetching data' });
-            return;
+            return res.status(500).json({ error: 'Error fetching data' });
         }
         res.json(results);
     });
 });
+
 
 
 
